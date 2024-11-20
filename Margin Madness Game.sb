@@ -1,0 +1,649 @@
+'---------------------------------------------------Initialisation Subroutines and Bug Fix-----------------------------------------------------
+'------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Sub setupGame 'Setup the game screen and essentials
+  'Screen setup and resizing
+  scrWidth = 600
+  scrHeight = 600
+  GraphicsWindow.Width = scrWidth
+  GraphicsWindow.Height = scrHeight
+  GraphicsWindow.BackgroundColor = "#4a4a4a"
+  GraphicsWindow.Clear()
+  
+  GraphicsWindow.CanResize = "False"
+  resizeTimer = 0
+  
+  'Shrinking screen speed
+  shrinkSpeedW = 0.3
+  shrinkSpeedH = 0.3
+  
+  'Set window name (Thanks Zac for this idea)
+  windowName[1] = "Boxing Day"
+  windowName[2] = "Shrink Happens"
+  windowName[3] = "Pushing Boundaries"
+  windowName[4] = "90 Degrees Store"
+  windowName[5] = "Square Off"
+  windowName[6] = "Close Quarters Combat"
+  windowName[7] = "Edge of Glory"
+  windowName[8] = "Borderline Broken"
+  windowName[9] = "Close Encounters"
+  
+  GraphicsWindow.Title = "Margin Madness: " + windowName[Math.GetRandomNumber(9)]
+  
+  'Events
+  GraphicsWindow.KeyDown = keyDown
+  
+  'Game speed and speed up
+  gameSpeed = 19
+  gameSpeedTimer = 0
+EndSub
+
+Sub threats 'All threats apart from homing bullet
+  'Warning
+  warningTimer = 1
+  currentSize = 300
+  
+  'Barrier
+  barrierOpacity = 50
+  barrierDamageTimer = 0
+  barrierX = Math.GetRandomNumber(scrWidth) 
+  barrierY = Math.GetRandomNumber(scrHeight)
+  
+  'Draw barrier
+  GraphicsWindow.PenWidth = 2
+  GraphicsWindow.PenColor = "Crimson"
+  GraphicsWindow.BrushColor = "#8c0d26"
+  barrier = Shapes.AddRectangle(500, 500) 
+  Shapes.Move(barrier, barrierX, barrierY)
+EndSub
+
+Sub playerSetup 'Setup the player
+  'Draw player and stretched player
+  stretchPlayer = 0
+  playerHeight = 80
+  playerWidth = 50
+  playerX = scrWidth / 2
+  playerY = scrHeight / 2
+  GraphicsWindow.PenWidth = 2
+  GraphicsWindow.PenColor = "DodgerBlue"
+  GraphicsWindow.BrushColor = "Teal"
+  player = Shapes.AddRectangle(playerWidth, playerHeight)
+  playerStretch = Shapes.AddRectangle(playerWidth * 0.8, playerHeight * 1.5)
+EndSub
+
+Sub menusLivesScore 'All of the menus and your score
+  'Define variables
+  lives = 3
+  quit = 0
+  howPlay = 0
+  score = 0
+  'Draw score
+  GraphicsWindow.BrushColor = "Crimson"
+  GraphicsWindow.FontSize = 30
+  scoreOBJ = Shapes.AddText("Score: " + score)
+  'Damage SFX
+  hitSound[1] = Program.Directory + "\sounds\hit1.mp3"
+  hitSound[2] = Program.Directory + "\sounds\hit2.mp3"
+  hitSound[3] = Program.Directory + "\sounds\hit3.mp3"
+  hitSound[4] = Program.Directory + "\sounds\hit4.mp3"
+  'Draw hearts
+  life1 = Shapes.AddImage(Program.Directory + "\sprites\heart.png")
+  life2 = Shapes.AddImage(Program.Directory + "\sprites\heart.png")
+  life3 = Shapes.AddImage(Program.Directory + "\sprites\heart.png")
+  'Move hearts to bottom left corner
+  Shapes.Move(life1, 0, scrHeight - 46)
+  Shapes.Move(life2, 46, scrHeight - 46)
+  Shapes.Move(life3, 92, scrHeight - 46)
+EndSub
+
+Sub initialise 'Setup the game
+  
+  setupGame()
+  
+  threats()
+  
+  playerSetup()
+  
+  menusLivesScore()
+  
+EndSub
+
+'Fix a bug in MS Small Basic that delays the first sound played in the program
+Sound.Stop(Program.Directory + "\sounds\emptySound.mp3")
+Sound.Play(Program.Directory + "\sounds\emptySound.mp3")
+
+'Start
+initialise()
+quit = 1 'Trigger the menu screen immediately
+
+'------------------------------------------------------------------Events------------------------------------------------------------------
+'--------------------------------------------------------------------------------------------------------------------------------------------
+
+Sub keyDown 'Checks for keypresses
+  If GraphicsWindow.LastKey = "Escape" Then 'Menu button
+    'Sound
+    Sound.Stop(Program.Directory + "\sounds\menu.mp3")
+    Sound.Play(Program.Directory + "\sounds\menu.mp3")
+    quit = 1
+  EndIf
+EndSub
+
+'------------------------------------------------------------------Subroutines------------------------------------------------------------------
+'--------------------------------------------------------------------------------------------------------------------------------------------------
+
+Sub cursorPoint 'Make the player face the mouse (thanks Flynn for the help with this section)
+  'Define variables
+  mouseX = GraphicsWindow.MouseX
+  mouseY = GraphicsWindow.MouseY
+  difX = mouseX - playerX
+  difY = mouseY - playerY
+  
+  'Find angle to face
+  If (difX <> 0) And (difY <> 0) Then
+    If (difX <= 0) And (difY <= 0) Then 'NW Quadrant
+      angle = Math.GetDegrees(Math.ArcTan(Math.Abs(difY) / Math.Abs(difX)))
+      addAngle = 270
+    ElseIf (difX <= 0) And (difY >= 0) Then 'SW Quadrant
+      angle = Math.GetDegrees(Math.ArcTan(Math.Abs(difX) / Math.Abs(difY)))
+      addAngle = 180
+    ElseIf difX >= 0 And difY >= 0 then 'SE Quadrant
+      angle = Math.GetDegrees(Math.ArcTan(Math.Abs(difY)/Math.Abs(difX)))
+      addAngle = 90
+    ElseIf difX >= 0 And difY <= 0 then 'NE Quadrant
+      angle = Math.GetDegrees(Math.ArcTan(Math.Abs(difX)/Math.Abs(difY)))
+      addAngle = 0
+    EndIf
+    'Add up angles and rotate player
+    endAngle = angle + addAngle
+    Shapes.Rotate(player, endAngle)
+    Shapes.Rotate(playerStretch, endAngle)
+    
+  EndIf
+EndSub
+
+Sub deathScreen 'Runs if you die
+  'Play sounds
+  Sound.Stop(Program.Directory + "\sounds\youDied.mp3")
+  Sound.Play(Program.Directory + "\sounds\youDied.mp3")
+  
+  'Setup screen
+  GraphicsWindow.Clear()
+  GraphicsWindow.Height = (Desktop.Width - (Desktop.Width / 5)) / 2
+  GraphicsWindow.Width = Desktop.Width - (Desktop.Width / 5)
+  
+  'Highscore
+  If score > File.ReadLine(Program.Directory + "\highscore.txt", 1) Then
+    File.WriteLine(Program.Directory + "\highscore.txt", 1, score)
+  EndIf
+  
+  'Print text
+  GraphicsWindow.FontSize = Desktop.Width / 15 'You have died
+  GraphicsWindow.FontBold = "True"
+  GraphicsWindow.BrushColor = "Crimson"
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.15, Desktop.Height / 5, "Y O U  H A V E  D I E D")
+  
+  GraphicsWindow.FontSize = Desktop.Width / 50 'Wait 3 seconds to restart
+  GraphicsWindow.FontBold = "True"
+  GraphicsWindow.BrushColor = "White"
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 4.25, Desktop.Height / 2.5, "Wait 3 seconds to restart...")
+  
+  GraphicsWindow.FontSize = Desktop.Width / 30 'Print score
+  GraphicsWindow.FontBold = "True"
+  GraphicsWindow.BrushColor = "Crimson"
+  GraphicsWindow.DrawText(0, 0, "Score: " + score)
+  
+  GraphicsWindow.FontSize = Desktop.Width / 30 'Print highscore
+  GraphicsWindow.FontBold = "True"
+  GraphicsWindow.BrushColor = "Crimson"
+  GraphicsWindow.DrawText(0, Desktop.Height / 15, "Highscore: " + File.ReadLine(Program.Directory + "\highscore.txt", 1))
+  
+  Program.Delay(3000) 'Wait 3 seconds
+  lives = 3 'Restart game
+EndSub
+
+Sub menu
+  'Setup menu
+  lives = 3
+  GraphicsWindow.Height = (Desktop.Height - (Desktop.Height / 7))
+  GraphicsWindow.Width = (Desktop.Width - (Desktop.Width / 5)) / 1.7
+  scrHeight = (Desktop.Width - (Desktop.Width / 5)) / 1.5
+  scrWidth = (Desktop.Width - (Desktop.Width / 5)) / 1.7
+  GraphicsWindow.Clear()
+  
+  'Title:
+  'Margin
+  GraphicsWindow.FontSize = GraphicsWindow.Width / 7 'These are for the drop shadow
+  GraphicsWindow.FontBold = "True"
+  GraphicsWindow.BrushColor = "DarkSlateGray"
+  
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.17, Desktop.Height / 18, "M A R G I N")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.165, Desktop.Height / 18.5, "M A R G I N")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.16, Desktop.Height / 19, "M A R G I N")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.155, Desktop.Height / 19.5, "M A R G I N")
+  
+  GraphicsWindow.FontSize = GraphicsWindow.Width / 7 'This is the real text
+  GraphicsWindow.FontBold = "True"
+  GraphicsWindow.BrushColor = "DarkCyan"
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.15, Desktop.Height / 20, "M A R G I N")
+  
+  'Madness
+  GraphicsWindow.FontSize = GraphicsWindow.Width / 7.5 'These are for the drop shadow
+  GraphicsWindow.FontBold = "True"
+  GraphicsWindow.BrushColor = "DarkSlateGray"
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.095, Desktop.Height / 6.8, "M A D N E S S")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.09, Desktop.Height / 6.85, "M A D N E S S")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.085, Desktop.Height / 6.9, "M A D N E S S")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.08, Desktop.Height / 6.95, "M A D N E S S")
+  
+  GraphicsWindow.FontSize = GraphicsWindow.Width / 7.5 'This is the real text
+  GraphicsWindow.FontBold = "True"
+  GraphicsWindow.BrushColor = "DarkCyan"
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.075, Desktop.Height / 7, "M A D N E S S")
+  
+  
+  'Draw buttons:
+  'Play
+  GraphicsWindow.PenColor = "DarkSlateGray" 'Draw button
+  GraphicsWindow.PenWidth = 10
+  GraphicsWindow.BrushColor = "DarkCyan"
+  GraphicsWindow.FillRectangle(Desktop.Width / 2 - Desktop.Width / 2.075, Desktop.Height / 3.5, Desktop.Width / 2.35, Desktop.Height / 8)
+  GraphicsWindow.DrawRectangle(Desktop.Width / 2 - Desktop.Width / 2.075, Desktop.Height / 3.5, Desktop.Width / 2.35, Desktop.Height / 8)
+  
+  GraphicsWindow.FontSize = GraphicsWindow.Width / 7.5 'Write text
+  GraphicsWindow.BrushColor = "DarkSlateGray"
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.27, Desktop.Height / 3.5, "P   L   A   Y")
+  
+  'Instructions
+  GraphicsWindow.PenColor = "DarkSlateGray" 'Draw button
+  GraphicsWindow.PenWidth = 10
+  GraphicsWindow.BrushColor = "DarkCyan"
+  GraphicsWindow.FillRectangle(Desktop.Width / 2 - Desktop.Width / 2.075, Desktop.Height / 2.3, Desktop.Width / 2.35, Desktop.Height / 8)
+  GraphicsWindow.DrawRectangle(Desktop.Width / 2 - Desktop.Width / 2.075, Desktop.Height / 2.3, Desktop.Width / 2.35, Desktop.Height / 8)
+  
+  GraphicsWindow.FontSize = GraphicsWindow.Width / 9 'Write text
+  GraphicsWindow.BrushColor = "DarkSlateGray"
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.1, Desktop.Height / 2.3, "INSTRUCTIONS")
+  
+  'Quit
+  GraphicsWindow.PenColor = "DarkSlateGray" 'Draw button
+  GraphicsWindow.PenWidth = 10
+  GraphicsWindow.BrushColor = "DarkCyan"
+  GraphicsWindow.FillRectangle(Desktop.Width / 2 - Desktop.Width / 2.075, Desktop.Height / 1.7, Desktop.Width / 2.35, Desktop.Height / 8)
+  GraphicsWindow.DrawRectangle(Desktop.Width / 2 - Desktop.Width / 2.075, Desktop.Height / 1.7, Desktop.Width / 2.35, Desktop.Height / 8)
+  
+  GraphicsWindow.FontSize = GraphicsWindow.Width / 8 'Write text
+  GraphicsWindow.BrushColor = "DarkSlateGray"
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.27, Desktop.Height / 1.7, "Q   U   I   T")
+  
+  'Button press detection:
+  While quit = 1
+    'Play
+    'X detection
+    If GraphicsWindow.MouseX > Desktop.Width / 2 - Desktop.Width / 2.075 And GraphicsWindow.MouseX < (Desktop.Width / 2 - Desktop.Width / 2.075) + Desktop.Width / 2.35 Then
+      'Y detection
+      If GraphicsWindow.MouseY > Desktop.Height / 3.5 And GraphicsWindow.MouseY < (Desktop.Height / 3.5) + (Desktop.Height / 8) Then
+        'Click detection
+        If Mouse.IsLeftButtonDown Then
+          'Play sounds
+          Sound.Stop(Program.Directory + "\sounds\click.mp3")
+          Sound.Play(Program.Directory + "\sounds\click.mp3")
+          'Start game
+          initialise()
+        EndIf
+      EndIf
+    EndIf
+    
+    'Instructions
+    'X detection
+    If GraphicsWindow.MouseX > Desktop.Width / 2 - Desktop.Width / 2.075 And GraphicsWindow.MouseX < (Desktop.Width / 2 - Desktop.Width / 2.075) + Desktop.Width / 2.35 Then
+      'Y detection
+      If GraphicsWindow.MouseY > Desktop.Height / 2.3 And GraphicsWindow.MouseY < (Desktop.Height / 2.3) + (Desktop.Height / 8) Then
+        'Click detection
+        If Mouse.IsLeftButtonDown Then
+          'Play sounds
+          Sound.Stop(Program.Directory + "\sounds\click.mp3")
+          Sound.Play(Program.Directory + "\sounds\click.mp3")
+          'Display instructions screen
+          howPlay = 1
+          instructions()
+        EndIf
+      EndIf
+    EndIf
+    
+    'Quit
+    'X detection
+    If GraphicsWindow.MouseX > Desktop.Width / 2 - Desktop.Width / 2.075 And GraphicsWindow.MouseX < (Desktop.Width / 2 - Desktop.Width / 2.075) + Desktop.Width / 2.35 Then
+      'Y detection
+      If GraphicsWindow.MouseY > Desktop.Height / 1.7 And GraphicsWindow.MouseY < (Desktop.Height / 1.7) + (Desktop.Height / 8) Then
+        'Click detection
+        If Mouse.IsLeftButtonDown Then
+          Program.End() 'Close game
+        EndIf
+      EndIf
+    EndIf
+  EndWhile
+EndSub
+
+Sub instructions 'Displays all of the intsructions
+  GraphicsWindow.Clear() 'Clears the screen
+  
+  'Print title:
+  GraphicsWindow.FontSize = GraphicsWindow.Width / 8.5 'These are for the drop shadow
+  GraphicsWindow.FontBold = "True"
+  GraphicsWindow.BrushColor = "DarkSlateGray"
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.17, Desktop.Height / 18, "HOW TO PLAY")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.165, Desktop.Height / 18.5, "HOW TO PLAY")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.16, Desktop.Height / 19, "HOW TO PLAY")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.155, Desktop.Height / 19.5, "HOW TO PLAY")
+  
+  GraphicsWindow.FontSize = GraphicsWindow.Width / 8.5 'This is the real text
+  GraphicsWindow.FontBold = "True"
+  GraphicsWindow.BrushColor = "DarkCyan"
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.15, Desktop.Height / 20, "HOW TO PLAY")
+  
+  'Right click to go back
+  GraphicsWindow.FontSize = GraphicsWindow.Width / 12.6 'These are for the drop shadow
+  GraphicsWindow.FontBold = "True"
+  GraphicsWindow.BrushColor = "DarkSlateGray"
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.095, Desktop.Height / 6.8, "(right click to go back)")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.09, Desktop.Height / 6.85, "(right click to go back)")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.085, Desktop.Height / 6.9, "(right click to go back)")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.08, Desktop.Height / 6.95, "(right click to go back)")
+  
+  GraphicsWindow.FontSize = GraphicsWindow.Width / 12.6 'This is the real text
+  GraphicsWindow.FontBold = "True"
+  GraphicsWindow.BrushColor = "DarkCyan"
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.075, Desktop.Height / 7, "(right click to go back)")
+  
+  'Draw text box
+  GraphicsWindow.PenColor = "DarkSlateGray"
+  GraphicsWindow.PenWidth = 10
+  GraphicsWindow.BrushColor = "DarkCyan"
+  GraphicsWindow.FillRectangle(Desktop.Width / 2 - Desktop.Width / 2.075, scrHeight / 3. Desktop.Width / 2.35, scrHeight / 1.4)
+  GraphicsWindow.DrawRectangle(Desktop.Width / 2 - Desktop.Width / 2.075, scrHeight / 3., Desktop.Width / 2.35, scrHeight / 1.4)
+  
+  'Print instructions
+  GraphicsWindow.FontSize = GraphicsWindow.Width / 17
+  GraphicsWindow.BrushColor = "DarkSlateGray"
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.1, Desktop.Height / 3.5, "- Move your mouse to move")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.1, Desktop.Height / 3, "   the player")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.1, Desktop.Height / 2.6, "- Avoid the red homing circle")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.1, Desktop.Height / 2.3, "- The red box damages you if")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.1, Desktop.Height / 2.1, "   you stay inside for too long")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.1, Desktop.Height / 1.9, "- Touch the screen borders")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.1, Desktop.Height / 1.75, "   to expand them")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.1, Desktop.Height / 1.6, "- Get into the gold box until")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.1, Desktop.Height / 1.5, "   the ding")
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.1, Desktop.Height / 1.4, "- Press escape to go back") 
+  GraphicsWindow.DrawText(Desktop.Width / 2 - Desktop.Width / 2.1, Desktop.Height / 1.3, "   to the menu")
+  
+  'Detect leaving the screen
+  While howPlay = 1
+    If Mouse.IsRightButtonDown Then
+      Sound.Stop(Program.Directory + "\sounds\click.mp3")
+      Sound.Play(Program.Directory + "\sounds\click.mp3")
+      menu()
+    EndIf
+  EndWhile
+EndSub
+
+Sub gameSpeed 'Changes and regulates the speed of the game
+  'Change game speed
+  If gameSpeedTimer >= 3 and gameSpeed > 0.5 Then
+    gameSpeed = gameSpeed - 0.01
+    gameSpeedTimer = 0
+  EndIf
+  start = Clock.ElapsedMilliseconds
+  
+  'A delay up to 20 ms (50 fps) depending on time spent doing work preparing frame update
+  delay = gameSpeed - (Clock.ElapsedMilliseconds - start)
+  If (delay > 0) Then
+    Program.Delay(delay)
+  EndIf
+EndSub
+
+Sub updateLives 'Updates the visuals of the hearts
+  Shapes.Move(life1, (0 + 8), scrHeight - (46 + 8))
+  Shapes.Move(life2, (46 + 8 + 8), scrHeight - (46 + 8))
+  Shapes.Move(life3, (92 + 8 + 8 + 8), scrHeight - (46 + 8))
+  
+  If lives = 3 Then 'Show 3 hearts
+    Shapes.ShowShape(life3)
+    Shapes.ShowShape(life2)
+    Shapes.ShowShape(life1)
+  ElseIf lives = 2 Then 'Show 2 hearts
+    Shapes.HideShape(life3)
+    Shapes.ShowShape(life2)
+    Shapes.ShowShape(life1)
+  ElseIf lives = 1 Then 'Show 1 heart
+    Shapes.HideShape(life3)
+    Shapes.HideShape(life2)
+    Shapes.ShowShape(life1)
+  ElseIf lives = 0 Then 'Hide all hearts
+    Shapes.HideShape(life3)
+    Shapes.HideShape(life2)
+    Shapes.HideShape(life1)
+  EndIf
+  
+EndSub
+
+Sub timers 'Update the timers
+  barrierMoveTimer = barrierMoveTimer + 1
+  resizeTimer = resizeTimer + 1
+  bulletDamageTimer = bulletDamageTimer + 1
+  gameSpeedTimer = gameSpeedTimer + 1
+  
+  'Speed up gold box after max speed reached
+  If gameSpeed > 0.51 Then
+    warningTimer = warningTimer + 1
+  Else
+    warningTimer = warningTimer + 2
+  EndIf    
+EndSub
+
+Sub scoreChange 'Update the score
+  score = score + 1
+  Shapes.SetText(scoreOBJ, "Score: " + score) 'Print score
+EndSub
+
+Sub shrinkScreen 'Shrink the screen
+  'Shrink speed
+  shrinkSpeedW = shrinkSpeedW * 1.01
+  shrinkSpeedH = shrinkSpeedH * 1.01
+  
+  'Shrink screen size and delay (delay to keep game running at a stable FPS)
+  If resizeTimer = 10 Then
+    scrHeight = scrHeight - shrinkSpeedH
+    scrWidth = scrWidth - shrinkSpeedW
+    GraphicsWindow.Width = scrWidth 
+    GraphicsWindow.Height = scrHeight
+    resizeTimer = 0
+  EndIf
+  
+  'Prevent crash from negative screen size and lose game if screen is too small
+  If (scrHeight < 150) Or (scrWidth < 150) Then
+    lives = 0
+  EndIf
+  
+  'Touch borders to increase size
+  If playerX > scrWidth - 50 Then 'Increase width
+    scrWidth = scrWidth + scrWidth / 50
+    shrinkSpeedW = 0.5
+  EndIf
+  If playerY > scrHeight - 50 Then 'Increase height
+    scrHeight = scrHeight + scrHeight / 50
+    shrinkSpeedH = 0.5
+  EndIf
+EndSub
+
+Sub playerMovement 'Move the player to the mouse
+  'Move the player to the mouse
+  Shapes.Move(player, playerX - playerWidth / 2, playerY - playerHeight / 2)
+  Shapes.Move(playerStretch, playerX - (playerWidth * 0.8) / 2, playerY - (playerHeight * 1.5) / 2)
+  cursorPoint()
+  playerX = playerX + difX / 5
+  playerY = playerY + difY / 5
+  
+  'Squash and stretch the player (these are the animations)
+  If (difX > 80) Or (difY > 80) Then
+    Shapes.HideShape(player)
+    Shapes.ShowShape(playerStretch)
+  Else
+    Shapes.HideShape(playerStretch)
+    Shapes.ShowShape(player)
+  EndIf
+EndSub
+
+Sub goldBox 'Everything to do with the gold box
+  'Warning tile
+  If warningTimer = 30 Then 'Summon gold box
+    'Draw gold box
+    currentSize = scrWidth / 3
+    GraphicsWindow.PenWidth = 2
+    GraphicsWindow.PenColor = "Gold"
+    GraphicsWindow.BrushColor = "#998200"
+    warning = Shapes.AddRectangle(currentSize, currentSize)
+    Shapes.SetOpacity(warning, 50)
+    warningX = Math.GetRandomNumber(scrWidth)
+    warningY = Math.GetRandomNumber(scrHeight)
+    Shapes.Move(warning, warningX, warningY)
+  EndIf
+  
+  If warningTimer = 100 Then 'Get into box by now
+    Shapes.SetOpacity(warning, 90)
+    
+    'If touching box
+    If playerX < (warningX + currentSize) and (playerX + playerWidth) > warningX and playerY < (warningY + currentSize) and (playerY + playerHeight) > warningY Then
+      'Play sounds
+      Sound.Stop(Program.Directory + "\sounds\ding.mp3")
+      Sound.Play(Program.Directory + "\sounds\ding.mp3")
+    Else 'Else take damage
+      lives = lives - 1
+      'Play sounds
+      randomHit = Math.GetRandomNumber(4)
+      Sound.Stop(hitSound[randomHit])
+      Sound.Play(hitSound[randomHit])
+    EndIf
+  EndIf
+  
+  If warningTimer >= 150 Then 'Remove the gold box
+    warningTimer = 0 'Restart timer
+    Shapes.Remove(warning)
+  EndIf
+  
+  'Move gold box if outside screen to prevent unfair deaths
+  If warningX > scrWidth or warningY > scrHeight Then
+    warningTimer = 0 'Restart timer
+    Shapes.Remove(warning) 'Remove box
+  EndIf
+EndSub
+
+Sub barrier 'Everything to do with the barrier
+  'If touching barrier
+  If playerX < (barrierX + 500 ) and playerX > barrierX and playerY < (barrierY + 500) and playerY > barrierY Then
+    'Increase opacity
+    barrierOpacity = barrierOpacity + 0.5
+    Shapes.SetOpacity(barrier, barrierOpacity)
+  Else 'Else set opacity to half
+    barrierOpacity = 50
+    Shapes.SetOpacity(barrier, barrierOpacity)
+  EndIf
+  
+  'Damage player when fully visible
+  If (barrierOpacity = 100) Then
+    lives = lives - 1
+    randomHit = Math.GetRandomNumber(4)
+    Sound.Stop(hitSound[randomHit])
+    Sound.Play(hitSound[randomHit])
+    
+    'Reset opacity
+    barrierOpacity = 50
+    Shapes.SetOpacity(barrier, barrierOpacity)
+  EndIf
+  
+  'Move barrier on timer
+  If barrierMoveTimer > 200 or barrierX > scrWidth or barrierY > scrHeight Then
+    barrierX = Math.GetRandomNumber(scrWidth) 
+    barrierY = Math.GetRandomNumber(scrHeight)
+    Shapes.Move(barrier, barrierX, barrierY)
+    barrierMoveTimer = 0
+  EndIf
+EndSub
+
+Sub homingBullet 'Everything to do with the homing bullet
+  'Introduce homing bullet at score = 600
+  If score = 600 Then
+    'Draw bullet
+    bulletX = 0
+    bulletY = 0
+    bulletSize = 25
+    GraphicsWindow.PenWidth = 2
+    GraphicsWindow.PenColor = "Crimson"
+    GraphicsWindow.BrushColor = "#8c0d26"
+    bullet = Shapes.AddEllipse(bulletSize, bulletSize)
+    bulletDamageTimer = 0
+  EndIf
+  
+  'After bullet is introduced:
+  If score > 600 Then
+    'Homing bullet movement
+    
+    difX = playerX - bulletX'Define variables
+    difY = playerY - bulletY
+    dif = Math.SquareRoot(math.Power(difX, 2) + Math.Power(difY, 2))
+    
+    bulletX = bulletX + difX / 60 'Move bullet
+    bulletY = bulletY + difY / 60
+    Shapes.Move(bullet, bulletX - bulletSize / 2, bulletY - bulletSize / 2)
+    
+    'Bullet collision detection and damage
+    If dif < 50 and bulletDamageTimer > 200 Then 
+      'Damage player
+      lives = lives - 1
+      bulletDamageTimer = 0
+      'Play sound
+      randomHit = Math.GetRandomNumber(4)
+      Sound.Stop(hitSound[randomHit])
+      Sound.Play(hitSound[randomHit])
+    EndIf
+  EndIf
+EndSub
+
+
+'------------------------------------------------------------------Game Loop------------------------------------------------------------------
+'--------------------------------------------------------------------------------------------------------------------------------------------------
+
+While 1 = 1 'While true
+  
+  While lives = 0 'When dead
+    deathScreen()
+  EndWhile
+  
+  If quit = 1 Then 'When on menu
+    menu()
+  Endif
+  
+  initialise() ' Start game
+  
+  While lives > 0 And quit = 0
+    
+    updateLives()
+    
+    timers()
+    
+    scoreChange()
+    
+    shrinkScreen()
+    
+    playerMovement()
+    
+    goldBox()
+    
+    barrier()
+    
+    homingBullet()
+    
+    gameSpeed()
+    
+  EndWhile
+EndWhile
